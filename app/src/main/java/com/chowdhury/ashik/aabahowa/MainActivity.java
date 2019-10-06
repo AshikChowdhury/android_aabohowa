@@ -3,6 +3,10 @@ package com.chowdhury.ashik.aabahowa;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -29,18 +33,45 @@ public class MainActivity extends AppCompatActivity {
 //    private TextView latlonTV;
     private TabLayout tabLayout;
     private Geocoder geocoder;
+    private ViewPager viewPager;
+    private CurrentWeatherFragment currentWeatherFragment;
+    private ForecastWeatherFragment forecastWeatherFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 //        latlonTV = findViewById(R.id.latlonTV);
         tabLayout = findViewById(R.id.tablayout);
+        viewPager = findViewById(R.id.viewpager);
+        currentWeatherFragment = new CurrentWeatherFragment();
+        forecastWeatherFragment = new ForecastWeatherFragment();
         tabLayout.addTab(tabLayout.newTab().setText("Current"));
         tabLayout.addTab(tabLayout.newTab().setText("Forecast"));
         tabLayout.setTabTextColors(Color.GRAY,Color.WHITE);
         tabLayout.setSelectedTabIndicatorColor(Color.GREEN);
         geocoder = new Geocoder(this, Locale.getDefault());
         client = LocationServices.getFusedLocationProviderClient(this);
+        WeatherPagerAdapter pagerAdapter = new WeatherPagerAdapter(getSupportFragmentManager());
+        viewPager.setAdapter(pagerAdapter);
+//        tabLayout.setupWithViewPager(viewPager);
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                viewPager.setCurrentItem(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
+        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
     }
 
     @Override
@@ -69,10 +100,34 @@ public class MainActivity extends AppCompatActivity {
             //explaion why this permission is important
         }
     }
+    private class WeatherPagerAdapter extends FragmentPagerAdapter {
+        public WeatherPagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            switch (position){
+                case 0:
+                    return currentWeatherFragment;
+                case 1:
+                    return forecastWeatherFragment;
+            }
+            return null;
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+    }
+
     private void convertGeolocationToStreet(double lat, double lon) throws IOException{
         List<Address> addressList = geocoder.getFromLocation(lat, lon, 1);
         final Address address = addressList.get(0);
         String addressLine = address.getAddressLine(0);
+        currentWeatherFragment.onLocationRecived(lat,lon,addressLine);
+        forecastWeatherFragment.onLocationRecived(lat,lon,addressLine);
 //        latlonTV.setText(lat+","+lon+"\n"+addressLine);
     }
 
